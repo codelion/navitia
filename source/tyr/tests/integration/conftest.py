@@ -54,8 +54,6 @@ def bdd(init_flask_db):
 
     with app.app_context():
         flask_migrate.downgrade(revision='base', directory=migration_dir)
-
-
 @pytest.fixture(scope='function', autouse=True)
 def clean_db():
     """
@@ -75,7 +73,8 @@ def clean_db():
                 'autocomplete_parameter',
             ]
         ]
-        db.session.execute('TRUNCATE {} CASCADE;'.format(', '.join(tables)))
+        for table in tables:
+            db.session.execute(text('TRUNCATE {} CASCADE;'.format(table)))
         db.session.commit()
 
 

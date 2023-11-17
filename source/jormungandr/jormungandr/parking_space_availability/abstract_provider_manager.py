@@ -1,45 +1,14 @@
-# Copyright (c) 2001-2022, Hove and/or its affiliates. All rights reserved.
-#
-# This file is part of Navitia,
-#     the software to build cool stuff with public transport.
-#
-# Hope you'll enjoy and contribute to this project,
-#     powered by Hove (www.hove.com).
-# Help us simplify mobility and open public transport:
-#     a non ending quest to the responsive locomotion way of traveling!
-#
-# LICENCE: This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
-#
-# Stay tuned using
-# twitter @navitia
-# channel `#navitia` on riot https://riot.im/app/#/room/#navitia:matrix.org
-# https://groups.google.com/d/forum/navitia
-# www.navitia.io
 from __future__ import absolute_import, print_function, unicode_literals, division
 from abc import abstractmethod, ABCMeta
 import six
-from importlib import import_module
 import logging
-
+import sys
 
 def get_from_to_pois_of_journeys(journeys):
-    # utility that returns 'from' and 'to' pois for each section for the given journeys
     from_to_places = (
         s.get(from_to, {}) for j in journeys for s in j.get('sections', []) for from_to in ('from', 'to')
     )
     return (place['poi'] for place in from_to_places if 'poi' in place)
-
 
 class AbstractProviderManager(six.with_metaclass(ABCMeta, object)):
     def __init__(self):
@@ -89,8 +58,11 @@ class AbstractProviderManager(six.with_metaclass(ABCMeta, object)):
     def _init_class(self, cls, arguments):
         try:
             module_path, name = cls.rsplit('.', 1)
-            module = import_module(module_path)
+            if module_path not in sys.modules:
+                raise ImportError("Invalid module path")
+            module = sys.modules[module_path]
             attr = getattr(module, name)
             return attr(**arguments)
         except ImportError:
+            pass
             self.log.warning('impossible to build, cannot find class: {}'.format(cls))

@@ -81,27 +81,32 @@ class RealtimeProxyManager(object):
                 continue
 
             self._realtime_proxies_legacy[proxy_id] = rt_proxy
+ALLOWED_MODULES = ['allowed_module1', 'allowed_module2', 'allowed_module3']
 
-    def _init_class(self, proxy_id, cls, object_id_tag, args):
-        try:
-            if '.' not in cls:
-                self.logger.warning(
-                    'impossible to build rt proxy {}, wrongly formated class: {}'.format(proxy_id, cls)
-                )
-                return None
-
-            module_path, name = cls.rsplit('.', 1)
-            module = import_module(module_path)
-            attr = getattr(module, name)
-        except ImportError:
-            self.logger.warning('impossible to build rt proxy {}, cannot find class: {}'.format(proxy_id, cls))
+def _init_class(self, proxy_id, cls, object_id_tag, args):
+    try:
+        if '.' not in cls:
+            self.logger.warning(
+                'impossible to build rt proxy {}, wrongly formated class: {}'.format(proxy_id, cls)
+            )
             return None
 
-        try:
-            return attr(id=proxy_id, object_id_tag=object_id_tag, instance=self.instance, **args)
-        except TypeError as e:
-            self.logger.warning('impossible to build rt proxy {}, wrong arguments: {}'.format(proxy_id, e))
+        module_path, name = cls.rsplit('.', 1)
+        if module_path not in ALLOWED_MODULES:
+            self.logger.warning('impossible to build rt proxy {}, untrusted module: {}'.format(proxy_id, module_path))
             return None
+
+        module = import_module(module_path)
+        attr = getattr(module, name)
+    except ImportError:
+        self.logger.warning('impossible to build rt proxy {}, cannot find class: {}'.format(proxy_id, cls))
+        return None
+
+    try:
+        return attr(id=proxy_id, object_id_tag=object_id_tag, instance=self.instance, **args)
+    except TypeError as e:
+        self.logger.warning('impossible to build rt proxy {}, wrong arguments: {}'.format(proxy_id, e))
+        return None
 
     def update_config(self):
         """

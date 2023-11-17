@@ -68,21 +68,25 @@ class EquipmentProviderManager(object):
                 )
             else:
                 self.logger.error('impossible to create provider with key: {}'.format(key))
+ALLOWED_MODULES = ['module1', 'module2', 'module3']  # Add your allowed modules here
 
-    def _init_class(self, provider_id, cls, arguments):
-        """
-        Create an instance of a provider according to config
-        :param cls: provider class in Jormungandr found in config file
-        :param arguments: parameters to set in the provider class
-        :return: instance of provider
-        """
-        try:
-            module_path, name = cls.rsplit('.', 1)
-            module = import_module(module_path)
-            attr = getattr(module, name)
-            return attr(provider_id, **arguments)
-        except ImportError:
-            self.logger.warning('impossible to build, cannot find class: {}'.format(cls))
+def _init_class(self, provider_id, cls, arguments):
+    """
+    Create an instance of a provider according to config
+    :param cls: provider class in Jormungandr found in config file
+    :param arguments: parameters to set in the provider class
+    :return: instance of provider
+    """
+    try:
+        module_path, name = cls.rsplit('.', 1)
+        if module_path not in ALLOWED_MODULES:
+            self.logger.warning('untrusted module: {}'.format(module_path))
+            return None
+        module = import_module(module_path)
+        attr = getattr(module, name)
+        return attr(provider_id, **arguments)
+    except ImportError:
+        self.logger.warning('impossible to build, cannot find class: {}'.format(cls))
 
     def _update_provider(self, provider):
         self.logger.info('updating/adding {} equipment provider'.format(provider.id))

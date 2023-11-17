@@ -71,21 +71,24 @@ class ExternalServiceManager(object):
                 )
 
             self._external_services_legacy.setdefault(config['navitia_service'], []).append(service)
+WHITELIST = ['allowed.module1', 'allowed.module2', 'allowed.module3']
 
-    def _init_class(self, id, cls, arguments):
-        """
-        Create an instance of a external service according to config
-        :param cls: name of the class configured in the database
-        :param arguments: parameters from the database required
-        :return: instance of external service
-        """
-        try:
-            module_path, name = cls.rsplit('.', 1)
-            module = import_module(module_path)
-            attr = getattr(module, name)
-            return attr(id, **arguments)
-        except ImportError:
-            self.logger.warning('impossible to build, cannot find class: {}'.format(cls))
+def _init_class(self, id, cls, arguments):
+    """
+    Create an instance of a external service according to config
+    :param cls: name of the class configured in the database
+    :param arguments: parameters from the database required
+    :return: instance of external service
+    """
+    try:
+        module_path, name = cls.rsplit('.', 1)
+        if module_path not in WHITELIST:
+            raise ImportError('Module not in whitelist: {}'.format(module_path))
+        module = import_module(module_path)
+        attr = getattr(module, name)
+        return attr(id, **arguments)
+    except ImportError:
+        self.logger.warning('impossible to build, cannot find class: {}'.format(cls))
 
     def _need_update(self, services):
         for service in services:

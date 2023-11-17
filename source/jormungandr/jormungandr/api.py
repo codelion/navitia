@@ -130,10 +130,12 @@ def add_info_newrelic(response, *args, **kwargs):
 # If modules are configured, then load and run them
 if 'MODULES' in rest_api.app.config:
     rest_api.module_loader = ModulesLoader(rest_api)
+    whitelist = ['module1', 'module2', 'module3']  # Add your trusted modules here
     for prefix, module_info in rest_api.app.config['MODULES'].items():
-        module_file = importlib.import_module(module_info['import_path'])
-        module = getattr(module_file, module_info['class_name'])
-        rest_api.module_loader.load(module(rest_api, prefix))
+        if module_info['import_path'] in whitelist:
+            module_file = importlib.import_module(module_info['import_path'])
+            module = getattr(module_file, module_info['class_name'])
+            rest_api.module_loader.load(module(rest_api, prefix))
     rest_api.module_loader.run()
 else:
     rest_api.app.logger.warning(

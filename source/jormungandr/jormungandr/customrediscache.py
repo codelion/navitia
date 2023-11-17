@@ -70,32 +70,34 @@ class CustomRedisCache(BaseCache):
         if timeout == 0:
             timeout = -1
         return timeout
+import json
 
-    def dump_object(self, value):
-        """Dumps an object into a string for redis.  By default it serializes
-        integers as regular string and pickle dumps everything else.
-        """
-        t = type(value)
-        if t in integer_types:
-            return str(value).encode("ascii")
-        return b"!" + pickle.dumps(value)
+def dump_object(self, value):
+    """Dumps an object into a string for redis.  By default it serializes
+    integers as regular string and json dumps everything else.
+    """
+    t = type(value)
+    if t in integer_types:
+        return str(value).encode("ascii")
+    return b"!" + json.dumps(value).encode("utf-8")
+import json
 
-    def load_object(self, value):
-        """The reversal of :meth:`dump_object`.  This might be called with
-        None.
-        """
-        if value is None:
-            return None
-        if value.startswith(b"!"):
-            try:
-                return pickle.loads(value[1:])
-            except pickle.PickleError:
-                return None
+def load_object(self, value):
+    """The reversal of :meth:`dump_object`.  This might be called with
+    None.
+    """
+    if value is None:
+        return None
+    if value.startswith(b"!"):
         try:
-            return int(value)
-        except ValueError:
-            # before 0.8 we did not have serialization.  Still support that.
-            return value
+            return json.loads(value[1:].decode())
+        except json.JSONDecodeError:
+            return None
+    try:
+        return int(value)
+    except ValueError:
+        # before 0.8 we did not have serialization.  Still support that.
+        return value
 
     def get(self, key):
         return self.load_object(self._read_client.get(self.key_prefix + key))

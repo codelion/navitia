@@ -95,24 +95,27 @@ class RidesharingServiceManager(object):
                 '** Ridesharing: {} used for instance: {} **'.format(type(service).__name__, self.instance.name)
             )
             self._ridesharing_services_legacy.append(service)
+WHITELIST = ['Kros', 'Klaxit', 'Blablalines']
 
-    def _init_class(self, klass, arguments):
-        """
-        Create an instance of a provider according to config
-        :param klass: name of the class configured in the database (Kros, Klaxit, Blablalines, ...)
-        :param arguments: parameters from the database required to create the Ridesharing class
-        :return: instance of Ridesharing service
-        """
-        try:
-            if '.' not in klass:
-                self.logger.warning('impossible to build, wrongly formated class: {}'.format(klass))
+def _init_class(self, klass, arguments):
+    """
+    Create an instance of a provider according to config
+    :param klass: name of the class configured in the database (Kros, Klaxit, Blablalines, ...)
+    :param arguments: parameters from the database required to create the Ridesharing class
+    :return: instance of Ridesharing service
+    """
+    try:
+        if '.' not in klass:
+            self.logger.warning('impossible to build, wrongly formated class: {}'.format(klass))
 
-            module_path, name = klass.rsplit('.', 1)
-            module = import_module(module_path)
-            attr = getattr(module, name)
-            return attr(**arguments)
-        except ImportError:
-            self.logger.warning('impossible to build, cannot find class: {}'.format(klass))
+        module_path, name = klass.rsplit('.', 1)
+        if module_path not in WHITELIST:
+            raise ImportError('Module not in whitelist: {}'.format(module_path))
+        module = import_module(module_path)
+        attr = getattr(module, name)
+        return attr(**arguments)
+    except ImportError:
+        self.logger.warning('impossible to build, cannot find class: {}'.format(klass))
 
     def _update_ridesharing_service(self, service):
         self.logger.info('updating/adding {} ridesharing service'.format(service.id))

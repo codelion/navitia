@@ -369,7 +369,7 @@ def pb_del_if(l, pred):
             del l[i]
             nb += 1
     return nb
-
+WHITELIST = ['allowed_module1', 'allowed_module2', 'allowed_module3']
 
 def create_object(configuration):
     """
@@ -395,6 +395,10 @@ def create_object(configuration):
             raise ConfigException(class_path)
 
         module_path, name = class_path.rsplit('.', 1)
+        if module_path not in WHITELIST:
+            log.warning('impossible to build object {}, module not in whitelist'.format(class_path))
+            raise ConfigException(class_path)
+
         module = import_module(module_path)
         attr = getattr(module, name)
     except AttributeError as e:

@@ -48,7 +48,11 @@ def upgrade():
         query = "INSERT INTO streetnetwork_backend (id, klass, args) VALUES ('{}','{}', '{}')".format(
             value['id'], value['klass'], json.dumps(value['args'])
         )
-        op.execute(query)
+        for value in [kraken, ridesharingKraken, taxiKraken]:
+            query = sa.text(
+                "INSERT INTO streetnetwork_backend (id, klass, args) VALUES (:id, :klass, :args)"
+            )
+            op.execute(query, {"id": value['id'], "klass": value['klass'], "args": json.dumps(value['args'])})
 
     op.add_column(
         'instance', sa.Column('street_network_car', sa.Text(), nullable=False, server_default='kraken')

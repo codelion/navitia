@@ -356,8 +356,6 @@ def config_logger():
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     return logger
-
-
 def main():
     logger = config_logger()
 
@@ -383,13 +381,13 @@ def main():
                     logger.info("prepare disruption with {}".format(impact['pt_object']))
                     try:
                         disruption = Disruption(
-                            eval(impact['pt_object']),
+                            ast.literal_eval(impact['pt_object']),
                             datetime.datetime.utcnow(),
                             datetime.datetime.utcnow() + datetime.timedelta(minutes=args.disruption_duration),
                             logger,
                             impact['impact_type'],
                         )
-                    except NameError:
+                    except (ValueError, SyntaxError):
                         logger.error("pt_object is badly formatted - {}".format(sys.exc_info()[0]))
                         raise
 
@@ -413,13 +411,13 @@ def main():
                 )
             else:
                 disruption = Disruption(
-                    eval(args.pt_object),
+                    ast.literal_eval(args.pt_object),
                     datetime.datetime.utcnow(),
                     datetime.datetime.utcnow() + datetime.timedelta(minutes=args.disruption_duration),
                     logger,
                     args.impact_type,
                 )
-        except NameError:
+        except (ValueError, SyntaxError):
             logger.error("pt_object is badly formatted - {}".format(sys.exc_info()[0]))
             raise
         publish(logger, args, disruption)

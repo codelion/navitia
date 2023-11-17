@@ -88,28 +88,27 @@ class MinioWrapper:
             session_token=self.session_token,
         )
         return client.fget_object(self.bucket_name, object_name, file_path)
+def retrieve_credentials(self):
+    """Retrieve credentials from ECS IAM Role"""
 
-    def retrieve_credentials(self):
-        """Retrieve credentials from ECS IAM Role"""
+    # see https://stackoverflow.com/questions/57065458/cannot-access-instance-metadata-from-within-a-fargate-task
+    # and https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
 
-        # see https://stackoverflow.com/questions/57065458/cannot-access-instance-metadata-from-within-a-fargate-task
-        # and https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
+    relative_uri = os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", None)
+    if relative_uri is None:
+        raise Exception("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is not configured")
 
-        relative_uri = os.environ.get("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", None)
-        if relative_uri is None:
-            raise Exception("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is not configured")
+    credentials_url = "https://169.254.170.2" + relative_uri
 
-        credentials_url = "http://169.254.170.2" + relative_uri
-
-        resp = requests.get(credentials_url)
-        if resp.status_code != 200:
-            raise Exception(
-                "Failed to retreive IAM credentials from {} : status code is {}".format(
-                    credentials_url, resp.status_code
-                )
+    resp = requests.get(credentials_url, verify=True)
+    if resp.status_code != 200:
+        raise Exception(
+            "Failed to retreive IAM credentials from {} : status code is {}".format(
+                credentials_url, resp.status_code
             )
+        )
 
-        json = resp.json()
-        self.access_key = json["AccessKeyId"]
-        self.secret_key = json["SecretAccessKey"]
-        self.session_token = json["Token"]
+    json = resp.json()
+    self.access_key = json["AccessKeyId"]
+    self.secret_key = json["SecretAccessKey"]
+    self.session_token = json["Token"]

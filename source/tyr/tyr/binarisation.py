@@ -516,8 +516,6 @@ def parse_poly(lines):
             in_ring = True
 
     return MultiPolygon(coords)
-
-
 def load_bounding_shape(instance_name, instance_conf, shape_path):
     logging.info("loading bounding shape for {} from = {}".format(instance_name, shape_path))
 
@@ -550,14 +548,14 @@ def load_bounding_shape(instance_name, instance_conf, shape_path):
         """
         ).close()
         # update the line, simplified to approx 100m
-        engine.execute(
-            """
-        UPDATE navitia.parameters
-        SET shape_computed = FALSE, shape = ST_Multi(ST_SimplifyPreserveTopology(ST_GeomFromText('{shape}'), 0.001))
-        """.format(
+        with engine.begin() as connection:
+            connection.execute(
+                """
+            UPDATE navitia.parameters
+            SET shape_computed = FALSE, shape = ST_Multi(ST_SimplifyPreserveTopology(ST_GeomFromText(:shape), 0.001))
+            """,
                 shape=wkt.dumps(shape)
             )
-        ).close()
     finally:
         engine.dispose()
 

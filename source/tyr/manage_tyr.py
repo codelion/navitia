@@ -30,6 +30,7 @@
 # https://groups.google.com/d/forum/navitia
 # www.navitia.io
 
+import os
 from tyr import app, db, manager
 from flask_migrate import Migrate, MigrateCommand
 from tyr.command import ReloadKrakenCommand, BuildDataCommand, LoadDataCommand, BuildDataRemoteCommand
@@ -43,5 +44,5 @@ manager.add_command('build_data_remote', BuildDataRemoteCommand())
 manager.add_command('load_data', LoadDataCommand())
 
 if __name__ == '__main__':
-    app.config['DEBUG'] = True
+    app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', False) == 'True'
     manager.run()
